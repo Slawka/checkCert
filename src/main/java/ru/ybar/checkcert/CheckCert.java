@@ -190,7 +190,6 @@ public class CheckCert {
                     }
                 }
             }
-            rs.close();
         } catch (SQLException | IOException e) {
             logger.log(Level.SEVERE, "Error Donwnload cert from db {}", e.getMessage());
         }
