@@ -18,6 +18,10 @@ public class CheckCert {
 
     private static String dateFormat = "dd-MM-yyyy HH:mm:ss";
 
+    public CheckCert() {
+        createTable();
+    }
+
     /**
      * Read the file and returns the byte array
      *
@@ -65,12 +69,8 @@ public class CheckCert {
      * Create a table if it doesn't exist
      */
     private void createTable() {
-        String sql = "CREATE TABLE IF NOT EXISTS cert (\n"
-                + "\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n"
-                + "\tname TEXT(255) NOT NULL,\n"
-                + "\tcert BLOB,\n"
-                + "\tfilename TEXT(255),\n"
-                + "\tvalid TEXT\n"
+        String sql = "CREATE TABLE IF NOT EXISTS cert (\n" + "\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n"
+                + "\tname TEXT(255) NOT NULL,\n" + "\tcert BLOB,\n" + "\tfilename TEXT(255),\n" + "\tvalid TEXT\n"
                 + ");";
 
         try (Connection conn = connect(); Statement statement = conn.createStatement();) {
@@ -125,7 +125,7 @@ public class CheckCert {
 
     public void delCert(int id) {
         String delSQL = "Delete from cert where id=?";
-        try (Connection conn = connect();PreparedStatement pstmt = conn.prepareStatement(delSQL)) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(delSQL)) {
             pstmt.setInt(1, id);
             pstmt.execute();
         } catch (SQLException e) {
@@ -143,12 +143,9 @@ public class CheckCert {
      */
     public void uploadCert(String filename, String name) {
         // update sql
-        String insertSQL = "INSERT INTO cert "
-                + "(\"cert\",\"name\",\"filename\",\"valid\") values"
-                + "(?,?,?,?)";
+        String insertSQL = "INSERT INTO cert " + "(\"cert\",\"name\",\"filename\",\"valid\") values" + "(?,?,?,?)";
 
-        try (Connection conn = connect();
-                PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
 
             // set parameters
             pstmt.setBytes(1, readFile(filename));
@@ -175,8 +172,9 @@ public class CheckCert {
         // update sql
         String selectSQL = "SELECT cert, filename FROM cert WHERE id=?";
 
-
-        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(selectSQL);ResultSet rs = pstmt.executeQuery();) {
+        try (Connection conn = connect();
+                PreparedStatement pstmt = conn.prepareStatement(selectSQL);
+                ResultSet rs = pstmt.executeQuery();) {
 
             pstmt.setInt(1, certId);
 
@@ -209,8 +207,10 @@ public class CheckCert {
 
         String[] listName = null;
 
-        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(selectSQL);ResultSet rs = pstmt.executeQuery();) {
-            
+        try (Connection conn = connect();
+                PreparedStatement pstmt = conn.prepareStatement(selectSQL);
+                ResultSet rs = pstmt.executeQuery();) {
+
             int n = 0;
             while (rs.next()) {
                 if (n == 0) {
@@ -227,9 +227,12 @@ public class CheckCert {
     }
 
     public DefaultTableModel listCertTable() {
-        DefaultTableModel model = new DefaultTableModel(new String[]{"id", "Desc", "Filename", "Date Valid", "Days left"}, 0);
+        DefaultTableModel model = new DefaultTableModel(
+                new String[] { "id", "Desc", "Filename", "Date Valid", "Days left" }, 0);
         String selectSQL = "SELECT id, name, filename,valid from cert order by valid asc;";
-        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(selectSQL);ResultSet rs = pstmt.executeQuery();) {
+        try (Connection conn = connect();
+                PreparedStatement pstmt = conn.prepareStatement(selectSQL);
+                ResultSet rs = pstmt.executeQuery();) {
 
             while (rs.next()) {
                 int id = rs.getInt("id");
@@ -237,7 +240,7 @@ public class CheckCert {
                 String filename = rs.getString("filename");
                 String valid = rs.getString("valid");
                 String validDay = getDaysLeft(rs.getString("valid"));
-                model.addRow(new Object[]{id, name, filename, valid, validDay});
+                model.addRow(new Object[] { id, name, filename, valid, validDay });
             }
 
         } catch (SQLException e) {
