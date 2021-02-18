@@ -69,14 +69,13 @@ public class CheckCert {
      * Create a table if it doesn't exist
      */
     private void createTable() {
-        String sql = "CREATE TABLE IF NOT EXISTS cert (\n" + "\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n"
-                + "\tname TEXT(255) NOT NULL,\n" + "\tcert BLOB,\n" + "\tfilename TEXT(255),\n" + "\tvalid TEXT\n"
-                + ");";
+        String sql = "CREATE TABLE IF NOT EXISTS cert (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT(255) NOT NULL, cert BLOB, namekey TEXT(255), key BLOB, filename TEXT(255), valid TEXT);";
 
         try (Connection conn = connect(); Statement statement = conn.createStatement();) {
             statement.execute(sql);
+            logger.log(Level.INFO, "Create DB Ok");
         } catch (SQLException e) {
-            logger.log(Level.SEVERE, e.getMessage());
+            logger.log(Level.SEVERE, "Error create DB {0}", e.getMessage());
         }
     }
 
@@ -142,7 +141,8 @@ public class CheckCert {
      * @param name
      */
     public void uploadCert(String filename, String name) {
-        // update sql
+
+        int numRowsInserted = 0;
         String insertSQL = "INSERT INTO cert " + "(\"cert\",\"name\",\"filename\",\"valid\") values" + "(?,?,?,?)";
 
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
@@ -152,6 +152,26 @@ public class CheckCert {
             pstmt.setString(2, name);
             pstmt.setString(3, new File(filename).getName());
             pstmt.setString(4, getValidDateCert(filename));
+            numRowsInserted = pstmt.executeUpdate();
+            logger.log(Level.INFO, "Stored the file in the BLOB column = {0}", numRowsInserted);
+
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Error upload:{0}", e.getMessage());
+        } finally {
+            logger.log(Level.SEVERE, "End upload");
+        }
+    }
+
+    public void uploadKey(String filename, int id) {
+        // update sql
+        String insertSQL = "UPDATE cert SET \"key\" = ?,\"namekey\" = ? where \"id\" = ?;";
+
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
+
+            // set parameters
+            pstmt.setBytes(1, readFile(filename));
+            pstmt.setString(2, new File(filename).getName());
+            pstmt.setInt(3, id);
 
             pstmt.executeUpdate();
             logger.log(Level.SEVERE, "Stored the file in the BLOB column.");
@@ -170,23 +190,36 @@ public class CheckCert {
      */
     public void saveCert(int certId, File path) {
         // update sql
-        String selectSQL = "SELECT cert, filename FROM cert WHERE id=?";
+        String selectSQL = "SELECT cert, filename, key, namekey FROM cert WHERE id=?";
 
         try (Connection conn = connect();
-                PreparedStatement pstmt = conn.prepareStatement(selectSQL);
-                ResultSet rs = pstmt.executeQuery();) {
+                PreparedStatement pstmt = conn.prepareStatement(selectSQL);) {
 
             pstmt.setInt(1, certId);
+            try (ResultSet rs = pstmt.executeQuery();) {
+                // write binary stream into file
+                File file = new File(path, rs.getString("filename"));
+                try (FileOutputStream fos = new FileOutputStream(file);) {
+                    logger.log(Level.INFO, "Read BLOB to file {0}", file.getAbsolutePath());
 
-            // write binary stream into file
-            File file = new File(path, rs.getString("filename"));
-            try (FileOutputStream fos = new FileOutputStream(file);) {
-                logger.log(Level.SEVERE, "Writing BLOB to file {}", file.getAbsolutePath());
-                while (rs.next()) {
                     InputStream input = rs.getBinaryStream("cert");
                     byte[] buffer = new byte[1024];
                     while (input.read(buffer) > 0) {
                         fos.write(buffer);
+                    }
+
+                }
+                String nameKey = rs.getString("namekey").trim();
+                if (!nameKey.equals("")) {
+                    file = new File(path, nameKey);
+                    try (FileOutputStream fos = new FileOutputStream(file);) {
+                        logger.log(Level.INFO, "Read BLOB to file {0}", file.getAbsolutePath());
+
+                        InputStream input = rs.getBinaryStream("key");
+                        byte[] buffer = new byte[1024];
+                        while (input.read(buffer) > 0) {
+                            fos.write(buffer);
+                        }
                     }
                 }
             }
@@ -227,8 +260,8 @@ public class CheckCert {
 
     public DefaultTableModel listCertTable() {
         DefaultTableModel model = new DefaultTableModel(
-                new String[] { "id", "Desc", "Filename", "Date Valid", "Days left" }, 0);
-        String selectSQL = "SELECT id, name, filename,valid from cert order by valid asc;";
+                new String[]{"id", "Desc", "File Cert", "File key", "Date Valid", "Days left"}, 0);
+        String selectSQL = "SELECT id, name, filename, namekey, valid from cert order by valid asc;";
         try (Connection conn = connect();
                 PreparedStatement pstmt = conn.prepareStatement(selectSQL);
                 ResultSet rs = pstmt.executeQuery();) {
@@ -237,9 +270,10 @@ public class CheckCert {
                 int id = rs.getInt("id");
                 String name = rs.getString("name");
                 String filename = rs.getString("filename");
+                String namekey = rs.getString("namekey");
                 String valid = rs.getString("valid");
                 String validDay = getDaysLeft(rs.getString("valid"));
-                model.addRow(new Object[] { id, name, filename, valid, validDay });
+                model.addRow(new Object[]{id, name, filename, namekey, valid, validDay});
             }
 
         } catch (SQLException e) {

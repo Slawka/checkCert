@@ -5,7 +5,6 @@
  */
 package ru.ybar.checkcert;
 
-
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -15,10 +14,11 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * @author slawka
  */
 public class MainFrame extends javax.swing.JFrame {
-    
+
     private static CheckCert cert = new CheckCert();
     private JFileChooser fileChooser = null;
-    private static final FileNameExtensionFilter filter = new FileNameExtensionFilter("Certificate files *.cer", "cer");
+    private static final FileNameExtensionFilter filterCer = new FileNameExtensionFilter("Certificate files *.cer", "cer");
+    private static final FileNameExtensionFilter filterKey = new FileNameExtensionFilter("Key files *.key", "key");
 
     /**
      * Creates new form MainFrame
@@ -34,22 +34,21 @@ public class MainFrame extends javax.swing.JFrame {
      */
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated
-    // Code">//GEN-BEGIN:initComponents
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         jButtonUpload = new javax.swing.JButton();
         jButtonDownload = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new javax.swing.JTable() {
-            public boolean isCellEditable(int rowIndex, int colIndex) {
-                return false; // Disallow the editing of any cell
-            }
-        };
+        jTable1 = new javax.swing.JTable(){public boolean isCellEditable(int rowIndex, int colIndex) {
+            return false;   //Disallow the editing of any cell
+        }};
         jTextFieldCertName = new javax.swing.JTextField();
         jLabel1 = new javax.swing.JLabel();
         jTextFieldDelId = new javax.swing.JTextField();
         jLabelDelId = new javax.swing.JLabel();
         jButtonDel = new javax.swing.JButton();
+        jButtonUploadKey = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Manager Cert");
@@ -89,55 +88,100 @@ public class MainFrame extends javax.swing.JFrame {
             }
         });
 
+        jButtonUploadKey.setText("Upload Key");
+        jButtonUploadKey.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonUploadKeyActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(layout.createSequentialGroup().addContainerGap()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 380, Short.MAX_VALUE)
-                                .addGroup(layout.createSequentialGroup().addComponent(jLabel1)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(jTextFieldCertName)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                        .addComponent(jButtonUpload, javax.swing.GroupLayout.PREFERRED_SIZE, 105,
-                                                javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addComponent(jButtonDownload, javax.swing.GroupLayout.DEFAULT_SIZE,
-                                        javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addGroup(layout.createSequentialGroup().addComponent(jLabelDelId)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(jTextFieldDelId, javax.swing.GroupLayout.PREFERRED_SIZE, 30,
-                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(jButtonDel, javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                        .addContainerGap()));
-        layout.setVerticalGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(layout.createSequentialGroup().addContainerGap()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(jButtonUpload)
-                                .addComponent(jTextFieldCertName, javax.swing.GroupLayout.PREFERRED_SIZE,
-                                        javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabel1))
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 380, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabelDelId)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonDownload)
+                        .addComponent(jTextFieldDelId, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 286, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(jTextFieldDelId, javax.swing.GroupLayout.PREFERRED_SIZE,
-                                        javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabelDelId).addComponent(jButtonDel))
-                        .addContainerGap()));
+                        .addComponent(jButtonDel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jButtonDownload, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jLabel1)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jTextFieldCertName)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jButtonUpload, javax.swing.GroupLayout.DEFAULT_SIZE, 105, Short.MAX_VALUE)
+                            .addComponent(jButtonUploadKey, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                .addContainerGap())
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButtonUpload)
+                    .addComponent(jTextFieldCertName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel1))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButtonDownload)
+                    .addComponent(jButtonUploadKey))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 286, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jTextFieldDelId, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabelDelId)
+                    .addComponent(jButtonDel))
+                .addContainerGap())
+        );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void jButtonUploadKeyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonUploadKeyActionPerformed
+        int[] selectedRow = jTable1.getSelectedRows();
+
+        if (selectedRow.length < 1) {
+            JOptionPane.showMessageDialog(MainFrame.this, "Select row Cert");
+            return;
+        } else {
+
+            fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Select File");
+            // Определение режима - только файл
+            fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            fileChooser.setFileFilter(filterKey);
+            int result = fileChooser.showSaveDialog(MainFrame.this);
+            // Если файл выбран, то представим его в сообщении
+            if (result == JFileChooser.APPROVE_OPTION) {
+
+                int dialogResult = JOptionPane.showConfirmDialog(MainFrame.this, "File '" + fileChooser.getSelectedFile() + " upload to id=" + jTable1.getValueAt(selectedRow[0], 0));
+                if (dialogResult == JOptionPane.YES_OPTION) {
+                    cert.uploadKey(fileChooser.getSelectedFile().toString(), (int) jTable1.getValueAt(selectedRow[0], 0));
+                    
+                }
+            }
+            jTextFieldCertName.setText("");
+            jTable1.setModel(cert.listCertTable());
+            jTable1.repaint();
+        }
+    }//GEN-LAST:event_jButtonUploadKeyActionPerformed
 
     private void jButtonDownloadActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonDownloadActionPerformed
         int[] selectedRow = jTable1.getSelectedRows();
         if (fileChooser == null) {
             fileChooser = new JFileChooser();
         }
-        fileChooser.setDialogTitle("Выбор директории для сохранения");
+        fileChooser.setDialogTitle("Choosing a directory to save");
         // Определение режима - только каталог
         fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         int result = fileChooser.showOpenDialog(MainFrame.this);
@@ -159,13 +203,14 @@ public class MainFrame extends javax.swing.JFrame {
             fileChooser.setDialogTitle("Выбор файла");
             // Определение режима - только файл
             fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-            fileChooser.setFileFilter(filter);
+            fileChooser.setFileFilter(filterCer);
             int result = fileChooser.showSaveDialog(MainFrame.this);
             // Если файл выбран, то представим его в сообщении
             if (result == JFileChooser.APPROVE_OPTION) {
                 cert.uploadCert(fileChooser.getSelectedFile().toString(), jTextFieldCertName.getText().trim());
                 JOptionPane.showMessageDialog(MainFrame.this, "Файл '" + fileChooser.getSelectedFile() + " upload ");
             }
+            System.out.println("Key result "+result);
             jTextFieldCertName.setText("");
             jTable1.setModel(cert.listCertTable());
             jTable1.repaint();
@@ -183,7 +228,7 @@ public class MainFrame extends javax.swing.JFrame {
         } else {
             JOptionPane.showMessageDialog(MainFrame.this,
                     "Del ID and the selected row does not match\n" + "Del ID = |" + jTextFieldDelId.getText().trim()
-                            + "|\n" + "Id Row = |" + jTable1.getValueAt(selectedRow[0], 0) + "|");
+                    + "|\n" + "Id Row = |" + jTable1.getValueAt(selectedRow[0], 0) + "|");
             return;
         }
     }// GEN-LAST:event_jButtonDelActionPerformed
@@ -222,7 +267,7 @@ public class MainFrame extends javax.swing.JFrame {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 new MainFrame().setVisible(true);
-                
+
             }
         });
     }
@@ -231,6 +276,7 @@ public class MainFrame extends javax.swing.JFrame {
     private javax.swing.JButton jButtonDel;
     private javax.swing.JButton jButtonDownload;
     private javax.swing.JButton jButtonUpload;
+    private javax.swing.JButton jButtonUploadKey;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabelDelId;
     private javax.swing.JScrollPane jScrollPane1;
