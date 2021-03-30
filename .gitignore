@@ -6,3 +6,5 @@ target
 .classpath
 .vscode
 .github
+/nbactions.xml
+/cert.db

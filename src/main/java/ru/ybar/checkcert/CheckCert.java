@@ -17,6 +17,15 @@ public class CheckCert {
     private static Logger logger = Logger.getLogger(CheckCert.class.getName());
 
     private static String dateFormat = "dd-MM-yyyy HH:mm:ss";
+    private String endOfDay = "";
+
+    private void setEndOfDay(String endOfDay) {
+        this.endOfDay = endOfDay;
+    }
+
+    public String getEndOfDay() {
+        return endOfDay;
+    }
 
     public CheckCert() {
         createTable();
@@ -265,7 +274,7 @@ public class CheckCert {
         try (Connection conn = connect();
                 PreparedStatement pstmt = conn.prepareStatement(selectSQL);
                 ResultSet rs = pstmt.executeQuery();) {
-
+            setEndOfDay("Expires ID = ");
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String name = rs.getString("name");
@@ -273,6 +282,9 @@ public class CheckCert {
                 String namekey = rs.getString("namekey");
                 String valid = rs.getString("valid");
                 String validDay = getDaysLeft(rs.getString("valid"));
+                if(Integer.parseInt(validDay)<60){
+                    setEndOfDay(getEndOfDay()+id+" ");
+                }
                 model.addRow(new Object[]{id, name, filename, namekey, valid, validDay});
             }
 
