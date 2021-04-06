@@ -20,6 +20,9 @@ public class CheckCert {
     private String endOfDay = "";
 
     private void setEndOfDay(String endOfDay) {
+        if (this.endOfDay.equals("")) {
+            this.endOfDay = "Expires ID = ";
+        }
         this.endOfDay = endOfDay;
     }
 
@@ -40,7 +43,7 @@ public class CheckCert {
     private byte[] readFile(String file) {
         ByteArrayOutputStream bos = null;
         File f = new File(file);
-        try (FileInputStream fis = new FileInputStream(f);) {
+        try ( FileInputStream fis = new FileInputStream(f);) {
 
             byte[] buffer = new byte[1024];
             bos = new ByteArrayOutputStream();
@@ -60,7 +63,7 @@ public class CheckCert {
      *
      * @return the Connection object
      */
-    private Connection connect() {
+    public Connection connect() {
         // SQLite connection string
         String url = "jdbc:sqlite:cert.db";
 
@@ -78,9 +81,9 @@ public class CheckCert {
      * Create a table if it doesn't exist
      */
     private void createTable() {
-        String sql = "CREATE TABLE IF NOT EXISTS cert (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT(255) NOT NULL, cert BLOB, namekey TEXT(255), key BLOB, filename TEXT(255), valid TEXT);";
+        String sql = "CREATE TABLE IF NOT EXISTS cert (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT(255), cert BLOB, namekey TEXT(255), key BLOB, filename TEXT(255), csr BLOB, namecsr TEXT(255), valid TEXT);";
 
-        try (Connection conn = connect(); Statement statement = conn.createStatement();) {
+        try ( Connection conn = connect();  Statement statement = conn.createStatement();) {
             statement.execute(sql);
             logger.log(Level.INFO, "Create DB Ok");
         } catch (SQLException e) {
@@ -97,7 +100,7 @@ public class CheckCert {
     private String getValidDateCert(String pathtoCertificate) {
 
         Date valid;
-        try (FileInputStream fr = new FileInputStream(pathtoCertificate);) {
+        try ( FileInputStream fr = new FileInputStream(pathtoCertificate);) {
 
             CertificateFactory cf = CertificateFactory.getInstance("X509");
 
@@ -133,7 +136,7 @@ public class CheckCert {
 
     public void delCert(int id) {
         String delSQL = "Delete from cert where id=?";
-        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(delSQL)) {
+        try ( Connection conn = connect();  PreparedStatement pstmt = conn.prepareStatement(delSQL)) {
             pstmt.setInt(1, id);
             pstmt.execute();
         } catch (SQLException e) {
@@ -154,7 +157,7 @@ public class CheckCert {
         int numRowsInserted = 0;
         String insertSQL = "INSERT INTO cert " + "(\"cert\",\"name\",\"filename\",\"valid\") values" + "(?,?,?,?)";
 
-        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
+        try ( Connection conn = connect();  PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
 
             // set parameters
             pstmt.setBytes(1, readFile(filename));
@@ -175,7 +178,7 @@ public class CheckCert {
         // update sql
         String insertSQL = "UPDATE cert SET \"key\" = ?,\"namekey\" = ? where \"id\" = ?;";
 
-        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
+        try ( Connection conn = connect();  PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
 
             // set parameters
             pstmt.setBytes(1, readFile(filename));
@@ -201,14 +204,13 @@ public class CheckCert {
         // update sql
         String selectSQL = "SELECT cert, filename, key, namekey FROM cert WHERE id=?";
 
-        try (Connection conn = connect();
-                PreparedStatement pstmt = conn.prepareStatement(selectSQL);) {
+        try ( Connection conn = connect();  PreparedStatement pstmt = conn.prepareStatement(selectSQL);) {
 
             pstmt.setInt(1, certId);
-            try (ResultSet rs = pstmt.executeQuery();) {
+            try ( ResultSet rs = pstmt.executeQuery();) {
                 // write binary stream into file
                 File file = new File(path, rs.getString("filename"));
-                try (FileOutputStream fos = new FileOutputStream(file);) {
+                try ( FileOutputStream fos = new FileOutputStream(file);) {
                     logger.log(Level.INFO, "Read BLOB to file {0}", file.getAbsolutePath());
 
                     InputStream input = rs.getBinaryStream("cert");
@@ -221,7 +223,7 @@ public class CheckCert {
                 String nameKey = rs.getString("namekey").trim();
                 if (!nameKey.equals("")) {
                     file = new File(path, nameKey);
-                    try (FileOutputStream fos = new FileOutputStream(file);) {
+                    try ( FileOutputStream fos = new FileOutputStream(file);) {
                         logger.log(Level.INFO, "Read BLOB to file {0}", file.getAbsolutePath());
 
                         InputStream input = rs.getBinaryStream("key");
@@ -248,9 +250,7 @@ public class CheckCert {
 
         String[] listName = null;
 
-        try (Connection conn = connect();
-                PreparedStatement pstmt = conn.prepareStatement(selectSQL);
-                ResultSet rs = pstmt.executeQuery();) {
+        try ( Connection conn = connect();  PreparedStatement pstmt = conn.prepareStatement(selectSQL);  ResultSet rs = pstmt.executeQuery();) {
 
             int n = 0;
             while (rs.next()) {
@@ -269,25 +269,25 @@ public class CheckCert {
 
     public DefaultTableModel listCertTable() {
         DefaultTableModel model = new DefaultTableModel(
-                new String[]{"id", "Desc", "File Cert", "File key", "Date Valid", "Days left"}, 0);
-        String selectSQL = "SELECT id, name, filename, namekey, valid from cert order by valid asc;";
-        try (Connection conn = connect();
-                PreparedStatement pstmt = conn.prepareStatement(selectSQL);
-                ResultSet rs = pstmt.executeQuery();) {
-            setEndOfDay("Expires ID = ");
+                new String[]{"id", "Desc", "File Cert", "File key", "CSR", "Date Valid", "Days left"}, 0);
+        String selectSQL = "SELECT id, name, filename, namekey, namecsr, valid from cert order by valid asc;";
+        try ( Connection conn = connect();  PreparedStatement pstmt = conn.prepareStatement(selectSQL);  ResultSet rs = pstmt.executeQuery();) {
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String name = rs.getString("name");
                 String filename = rs.getString("filename");
                 String namekey = rs.getString("namekey");
+                String namecsr = rs.getString("namecsr");
                 String valid = rs.getString("valid");
-                String validDay = getDaysLeft(rs.getString("valid"));
-                if(Integer.parseInt(validDay)<60){
-                    setEndOfDay(getEndOfDay()+id+" ");
+                String validDay = valid;
+                if (validDay != null) {
+                    validDay = getDaysLeft(validDay);
+                    if (Integer.parseInt(validDay) < 60) {
+                        setEndOfDay(getEndOfDay() + id + " ");
+                    }
                 }
-                model.addRow(new Object[]{id, name, filename, namekey, valid, validDay});
+                model.addRow(new Object[]{id, name, filename, namekey, namecsr, valid, validDay});
             }
-
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Error read cert from db {}", e.getMessage());
         }

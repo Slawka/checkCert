@@ -19,6 +19,7 @@ import org.bouncycastle.pkcs.PKCS10CertificationRequestBuilder;
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -28,6 +29,9 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.logging.Level;
@@ -38,6 +42,8 @@ import org.bouncycastle.util.io.pem.PemObject;
 
 public class CertificateAuthorityClientTest {
 
+    private static Logger logger = Logger.getLogger(CheckCert.class.getName());
+    
     private KeyPairGenerator KEY_PAIR_GENERATOR;
     private int RSA_KEY_SIZE = 2048;
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
@@ -70,7 +76,8 @@ public class CertificateAuthorityClientTest {
                             KeyPurposeId.id_kp_clientAuth,
                             KeyPurposeId.id_kp_serverAuth}
                 ));
-
+/*
+        
         GeneralNames subAtlNames = new GeneralNames(
                 new GeneralName[]{
                     new GeneralName(GeneralName.dNSName, "test.com"),
@@ -78,15 +85,41 @@ public class CertificateAuthorityClientTest {
         );
         extensionsGenerator.addExtension(
                 Extension.subjectAlternativeName, true, subAtlNames);
-
+*/
         ContentSigner signer = new JcaContentSignerBuilder("SHA256withRSA").build(keyPair.getPrivate());
 
         PKCS10CertificationRequestBuilder csrBuilder = new JcaPKCS10CertificationRequestBuilder(name, keyPair.getPublic())
                 .addAttribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, extensionsGenerator.generate());
         PKCS10CertificationRequest csr = csrBuilder.build(signer);
+        
         PemObject pemObject = new PemObject("CERTIFICATE REQUEST", csr.getEncoded());
+        StringWriter strCsr = new StringWriter();
+        PEMWriter pemWriter = new PEMWriter(strCsr);
+        pemWriter.writeObject(pemObject);
+        pemWriter.close();
+        strCsr.close();
+        System.out.println(strCsr);
+
+        int numRowsInserted = 0;
+        String insertSQL = "INSERT INTO cert " + "(\"csr\",\"namecsr\") values" + "(?,?)";
+
+        try ( Connection conn = new CheckCert().connect();  PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
+
+            // set parameters
+            pstmt.setBytes(1, csr.getEncoded());
+            pstmt.setString(2, csr.getSubject().toString());
+            numRowsInserted = pstmt.executeUpdate();
+            logger.log(Level.INFO, "Stored the file in the BLOB column = {0}", numRowsInserted);
+
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Error upload:{0}", e.getMessage());
+        } finally {
+            logger.log(Level.SEVERE, "End upload");
+        }
+        
+        pemObject = new PemObject("PRIVATE KEY", keyPair.getPrivate().getEncoded());
         StringWriter str = new StringWriter();
-        PEMWriter pemWriter = new PEMWriter(str);
+        pemWriter = new PEMWriter(str);
         pemWriter.writeObject(pemObject);
         pemWriter.close();
         str.close();
