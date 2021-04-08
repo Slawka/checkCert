@@ -1,16 +1,41 @@
 package ru.ybar.checkcert;
 
 import java.io.*;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.table.DefaultTableModel;
+import org.apache.http.util.TextUtils;
+import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.X500NameBuilder;
+import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.ExtensionsGenerator;
+import org.bouncycastle.asn1.x509.GeneralName;
+import org.bouncycastle.asn1.x509.GeneralNames;
+import org.bouncycastle.asn1.x509.KeyPurposeId;
+import org.bouncycastle.asn1.x509.KeyUsage;
+import org.bouncycastle.openssl.PEMWriter;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
+import org.bouncycastle.pkcs.PKCS10CertificationRequestBuilder;
+import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
+import org.bouncycastle.util.io.pem.PemObject;
 
 public class CheckCert {
 
@@ -81,7 +106,7 @@ public class CheckCert {
      * Create a table if it doesn't exist
      */
     private void createTable() {
-        String sql = "CREATE TABLE IF NOT EXISTS cert (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT(255), cert BLOB, namekey TEXT(255), key BLOB, filename TEXT(255), csr BLOB, namecsr TEXT(255), valid TEXT);";
+        String sql = "CREATE TABLE IF NOT EXISTS cert (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT(255), cert BLOB, namekey TEXT(255), key BLOB, namecert TEXT(255), csr BLOB, namecsr TEXT(255), valid TEXT);";
 
         try ( Connection conn = connect();  Statement statement = conn.createStatement();) {
             statement.execute(sql);
@@ -155,7 +180,7 @@ public class CheckCert {
     public void uploadCert(String filename, String name) {
 
         int numRowsInserted = 0;
-        String insertSQL = "INSERT INTO cert " + "(\"cert\",\"name\",\"filename\",\"valid\") values" + "(?,?,?,?)";
+        String insertSQL = "INSERT INTO cert " + "(\"cert\",\"name\",\"namecert\",\"valid\") values" + "(?,?,?,?)";
 
         try ( Connection conn = connect();  PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
 
@@ -200,26 +225,27 @@ public class CheckCert {
      *
      * @param certId
      */
-    public void saveCert(int certId, File path) {
+    public void saveCert(int certId, String type, File path) {
         // update sql
-        String selectSQL = "SELECT cert, filename, key, namekey FROM cert WHERE id=?";
+        String selectSQL = "SELECT " + type + ", name" + type + " FROM cert WHERE id=?";
 
         try ( Connection conn = connect();  PreparedStatement pstmt = conn.prepareStatement(selectSQL);) {
 
             pstmt.setInt(1, certId);
             try ( ResultSet rs = pstmt.executeQuery();) {
                 // write binary stream into file
-                File file = new File(path, rs.getString("filename"));
+                File file = new File(path, rs.getString("name" + type));
                 try ( FileOutputStream fos = new FileOutputStream(file);) {
                     logger.log(Level.INFO, "Read BLOB to file {0}", file.getAbsolutePath());
 
-                    InputStream input = rs.getBinaryStream("cert");
+                    InputStream input = rs.getBinaryStream(type);
                     byte[] buffer = new byte[1024];
                     while (input.read(buffer) > 0) {
                         fos.write(buffer);
                     }
 
                 }
+                /*
                 String nameKey = rs.getString("namekey").trim();
                 if (!nameKey.equals("")) {
                     file = new File(path, nameKey);
@@ -233,6 +259,7 @@ public class CheckCert {
                         }
                     }
                 }
+                 */
             }
         } catch (SQLException | IOException e) {
             logger.log(Level.SEVERE, "Error Donwnload cert from db {}", e.getMessage());
@@ -270,12 +297,12 @@ public class CheckCert {
     public DefaultTableModel listCertTable() {
         DefaultTableModel model = new DefaultTableModel(
                 new String[]{"id", "Desc", "File Cert", "File key", "CSR", "Date Valid", "Days left"}, 0);
-        String selectSQL = "SELECT id, name, filename, namekey, namecsr, valid from cert order by valid asc;";
+        String selectSQL = "SELECT id, name, namecert, namekey, namecsr, valid from cert order by valid asc;";
         try ( Connection conn = connect();  PreparedStatement pstmt = conn.prepareStatement(selectSQL);  ResultSet rs = pstmt.executeQuery();) {
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String name = rs.getString("name");
-                String filename = rs.getString("filename");
+                String namecer = rs.getString("namecert");
                 String namekey = rs.getString("namekey");
                 String namecsr = rs.getString("namecsr");
                 String valid = rs.getString("valid");
@@ -286,11 +313,126 @@ public class CheckCert {
                         setEndOfDay(getEndOfDay() + id + " ");
                     }
                 }
-                model.addRow(new Object[]{id, name, filename, namekey, namecsr, valid, validDay});
+                model.addRow(new Object[]{id, name, namecer, namekey, namecsr, valid, validDay});
             }
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Error read cert from db {}", e.getMessage());
         }
         return model;
     }
+
+    public byte[] createCSR(String CN, String OU, String O, String C, String DNS, String IP, String type) throws IOException, OperatorCreationException {
+        KeyPairGenerator KEY_PAIR_GENERATOR = null;
+        int RSA_KEY_SIZE = 2048;
+
+        try {
+            KEY_PAIR_GENERATOR = KeyPairGenerator.getInstance("RSA");
+        } catch (NoSuchAlgorithmException ex) {
+            Logger.getLogger(CertificateAuthorityClientTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        KEY_PAIR_GENERATOR.initialize(RSA_KEY_SIZE);
+        KeyPair keyPair = KEY_PAIR_GENERATOR.generateKeyPair();
+
+        X500Name name = new X500NameBuilder()
+                .addRDN(BCStyle.CN, CN)
+                .addRDN(BCStyle.OU, OU)
+                .addRDN(BCStyle.O, O)
+                .addRDN(BCStyle.C, C)
+                .build();
+
+        ExtensionsGenerator extensionsGenerator = new ExtensionsGenerator();
+
+        extensionsGenerator.addExtension(
+                Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature));
+
+        switch (type) {
+            case "client":
+                extensionsGenerator.addExtension(
+                        Extension.extendedKeyUsage,
+                        true,
+                        new ExtendedKeyUsage(
+                                new KeyPurposeId[]{
+                                    KeyPurposeId.id_kp_clientAuth}
+                        ));
+                break;
+            case "server":
+                extensionsGenerator.addExtension(
+                        Extension.extendedKeyUsage,
+                        true,
+                        new ExtendedKeyUsage(
+                                new KeyPurposeId[]{
+                                    KeyPurposeId.id_kp_serverAuth}
+                        ));
+                break;
+            case "clientserver":
+                extensionsGenerator.addExtension(
+                        Extension.extendedKeyUsage,
+                        true,
+                        new ExtendedKeyUsage(
+                                new KeyPurposeId[]{
+                                    KeyPurposeId.id_kp_clientAuth,
+                                    KeyPurposeId.id_kp_serverAuth}
+                        ));
+        };
+
+        if (!IP.isEmpty() || !DNS.isEmpty()) {
+
+            List<GeneralName> namesList = new ArrayList<>();
+
+            String[] elements = DNS.split("\r\n|\n");
+            for (String element : elements) {
+                namesList.add(new GeneralName(GeneralName.dNSName, element));
+            }
+
+            elements = IP.split("\r\n|\n");
+            for (String element : elements) {
+                namesList.add(new GeneralName(GeneralName.iPAddress, element));
+            }
+            GeneralNames subAtlNames = new GeneralNames(namesList.toArray(new GeneralName[]{}));
+
+            extensionsGenerator.addExtension(
+                    Extension.subjectAlternativeName, true, subAtlNames);
+        }
+        ContentSigner signer = new JcaContentSignerBuilder("SHA256withRSA").build(keyPair.getPrivate());
+
+        PKCS10CertificationRequestBuilder csrBuilder = new JcaPKCS10CertificationRequestBuilder(name, keyPair.getPublic())
+                .addAttribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, extensionsGenerator.generate());
+        PKCS10CertificationRequest csr = csrBuilder.build(signer);
+
+        PemObject pemObject = new PemObject("CERTIFICATE REQUEST", csr.getEncoded());
+        StringWriter strCsr = new StringWriter();
+        PEMWriter pemWriter = new PEMWriter(strCsr);
+        pemWriter.writeObject(pemObject);
+        pemWriter.close();
+        strCsr.close();
+        System.out.println(strCsr);
+
+        int numRowsInserted = 0;
+        String insertSQL = "INSERT INTO cert " + "(\"csr\",\"namecsr\") values" + "(?,?)";
+
+        try ( Connection conn = new CheckCert().connect();  PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
+
+            // set parameters
+            pstmt.setBytes(1, strCsr.toString().getBytes("UTF-8"));
+            pstmt.setString(2, csr.getSubject().toString());
+            numRowsInserted = pstmt.executeUpdate();
+            logger.log(Level.INFO, "Stored the file in the BLOB column = {0}", numRowsInserted);
+
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Error upload:{0}", e.getMessage());
+        } finally {
+            logger.log(Level.SEVERE, "End upload");
+        }
+
+        pemObject = new PemObject("PRIVATE KEY", keyPair.getPrivate().getEncoded());
+        StringWriter str = new StringWriter();
+        pemWriter = new PEMWriter(str);
+        pemWriter.writeObject(pemObject);
+        pemWriter.close();
+        str.close();
+        System.out.println(str);
+
+        return new byte[0];
+    }
+
 }
