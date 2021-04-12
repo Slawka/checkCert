@@ -90,11 +90,12 @@ public class CheckCert {
      */
     public Connection connect() {
         // SQLite connection string
-        String url = "jdbc:sqlite:cert.db";
-
+        String url = "jdbc:h2:./cert;CIPHER=AES";
+        String user = "sa";
+        String pwds = "test" + " userpwd";
         try {
-            Class.forName("org.sqlite.JDBC");
-            return DriverManager.getConnection(url);
+            Class.forName("org.h2.Driver");
+            return DriverManager.getConnection(url, user, pwds);
         } catch (SQLException | ClassNotFoundException e) {
             logger.log(Level.SEVERE, "Connect: {0}", e.getMessage());
             System.exit(1);
@@ -106,7 +107,17 @@ public class CheckCert {
      * Create a table if it doesn't exist
      */
     private void createTable() {
-        String sql = "CREATE TABLE IF NOT EXISTS cert (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT(255), cert BLOB, namekey TEXT(255), key BLOB, namecert TEXT(255), csr BLOB, namecsr TEXT(255), valid TEXT);";
+        String sql = "CREATE TABLE IF NOT EXISTS PUBLIC.CERT (\n"
+                + "	ID BIGINT NOT NULL AUTO_INCREMENT,\n"
+                + "	NAME VARCHAR(255),\n"
+                + "	CERT BLOB,\n"
+                + "	NAMECERT VARCHAR(255),\n"
+                + "	\"KEY\" BLOB,\n"
+                + "	NAMEKEY VARCHAR(255),\n"
+                + "	CSR BLOB,\n"
+                + "	NAMECSR VARCHAR(255),\n"
+                + "	VALID DATE\n"
+                + ");";
 
         try ( Connection conn = connect();  Statement statement = conn.createStatement();) {
             statement.execute(sql);
@@ -160,7 +171,7 @@ public class CheckCert {
     }
 
     public void delCert(int id) {
-        String delSQL = "Delete from cert where id=?";
+        String delSQL = "Delete FROM PUBLIC.CERT where ID=?";
         try ( Connection conn = connect();  PreparedStatement pstmt = conn.prepareStatement(delSQL)) {
             pstmt.setInt(1, id);
             pstmt.execute();
@@ -180,7 +191,7 @@ public class CheckCert {
     public void uploadCert(String filename, String name) {
 
         int numRowsInserted = 0;
-        String insertSQL = "INSERT INTO cert " + "(\"cert\",\"name\",\"namecert\",\"valid\") values" + "(?,?,?,?)";
+        String insertSQL = "INSERT INTO PUBLIC.CERT " + "(\"CERT\",\"NAME\",\"NAMECERT\",\"VALID\") values" + "(?,?,?,?)";
 
         try ( Connection conn = connect();  PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
 
@@ -201,7 +212,7 @@ public class CheckCert {
 
     public void uploadKey(String filename, int id) {
         // update sql
-        String insertSQL = "UPDATE cert SET \"key\" = ?,\"namekey\" = ? where \"id\" = ?;";
+        String insertSQL = "UPDATE PUBLIC.CERT SET \"KEY\" = ?,\"NAMEKEY\" = ? where \"ID\" = ?;";
 
         try ( Connection conn = connect();  PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
 
@@ -227,14 +238,17 @@ public class CheckCert {
      */
     public void saveCert(int certId, String type, File path) {
         // update sql
-        String selectSQL = "SELECT " + type + ", name" + type + " FROM cert WHERE id=?";
+        String selectSQL = "SELECT \"" + type + "\", \"NAME" + type + "\" FROM PUBLIC.CERT WHERE ID=?;";
 
         try ( Connection conn = connect();  PreparedStatement pstmt = conn.prepareStatement(selectSQL);) {
 
             pstmt.setInt(1, certId);
             try ( ResultSet rs = pstmt.executeQuery();) {
                 // write binary stream into file
-                File file = new File(path, rs.getString("name" + type));
+                System.out.println("NAME" + type);
+                rs.next();
+                System.out.println(rs.getString("NAME" + type));
+                File file = new File(path, rs.getString("NAME" + type).replaceAll("[, ]","_"));
                 try ( FileOutputStream fos = new FileOutputStream(file);) {
                     logger.log(Level.INFO, "Read BLOB to file {0}", file.getAbsolutePath());
 
@@ -245,24 +259,10 @@ public class CheckCert {
                     }
 
                 }
-                /*
-                String nameKey = rs.getString("namekey").trim();
-                if (!nameKey.equals("")) {
-                    file = new File(path, nameKey);
-                    try ( FileOutputStream fos = new FileOutputStream(file);) {
-                        logger.log(Level.INFO, "Read BLOB to file {0}", file.getAbsolutePath());
-
-                        InputStream input = rs.getBinaryStream("key");
-                        byte[] buffer = new byte[1024];
-                        while (input.read(buffer) > 0) {
-                            fos.write(buffer);
-                        }
-                    }
-                }
-                 */
             }
         } catch (SQLException | IOException e) {
-            logger.log(Level.SEVERE, "Error Donwnload cert from db {}", e.getMessage());
+            e.printStackTrace();
+            logger.log(Level.SEVERE, "Error Donwnload " + type + " from db " + selectSQL, e.getMessage());
         }
 
     }
@@ -273,7 +273,7 @@ public class CheckCert {
      * @return
      */
     public String[] listCert() {
-        String selectSQL = "SELECT name, COUNT(*) over () cn from cert;";
+        String selectSQL = "SELECT NAME, COUNT(*) over () cn FROM PUBLIC.CERT;";
 
         String[] listName = null;
 
@@ -284,7 +284,7 @@ public class CheckCert {
                 if (n == 0) {
                     listName = new String[rs.getInt("cn")];
                 }
-                listName[n] = rs.getString("name");
+                listName[n] = rs.getString("NAME");
                 n++;
             }
 
@@ -297,15 +297,15 @@ public class CheckCert {
     public DefaultTableModel listCertTable() {
         DefaultTableModel model = new DefaultTableModel(
                 new String[]{"id", "Desc", "File Cert", "File key", "CSR", "Date Valid", "Days left"}, 0);
-        String selectSQL = "SELECT id, name, namecert, namekey, namecsr, valid from cert order by valid asc;";
+        String selectSQL = "SELECT ID, NAME, NAMECERT, NAMEKEY, NAMECSR, VALID FROM PUBLIC.CERT order by valid asc;";
         try ( Connection conn = connect();  PreparedStatement pstmt = conn.prepareStatement(selectSQL);  ResultSet rs = pstmt.executeQuery();) {
             while (rs.next()) {
-                int id = rs.getInt("id");
-                String name = rs.getString("name");
-                String namecer = rs.getString("namecert");
-                String namekey = rs.getString("namekey");
-                String namecsr = rs.getString("namecsr");
-                String valid = rs.getString("valid");
+                int id = rs.getInt("ID");
+                String name = rs.getString("NAME");
+                String namecer = rs.getString("NAMECERT");
+                String namekey = rs.getString("NAMEKEY");
+                String namecsr = rs.getString("NAMECSR");
+                String valid = rs.getString("VALID");
                 String validDay = valid;
                 if (validDay != null) {
                     validDay = getDaysLeft(validDay);
@@ -405,10 +405,10 @@ public class CheckCert {
         pemWriter.writeObject(pemObject);
         pemWriter.close();
         strCsr.close();
-        System.out.println(strCsr);
+        //System.out.println(strCsr);
 
         int numRowsInserted = 0;
-        String insertSQL = "INSERT INTO cert " + "(\"csr\",\"namecsr\") values" + "(?,?)";
+        String insertSQL = "INSERT INTO PUBLIC.CERT " + "(\"CSR\",\"NAMECSR\") values" + "(?,?)";
 
         try ( Connection conn = new CheckCert().connect();  PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
 

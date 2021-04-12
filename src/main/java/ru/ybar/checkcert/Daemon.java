@@ -25,7 +25,7 @@ public class Daemon implements Runnable {
     JTable jTable = null;
     private static CheckCert cert = new CheckCert();
     Boolean run = true;
-    long wait = 12000;
+    long wait = 43200000;
 
     public void setjTable(JTable jTable) {
         this.jTable = jTable;

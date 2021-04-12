@@ -8,3 +8,4 @@ target
 .github
 /nbactions.xml
 /cert.db
+CertificateAuthorityClientTest.java

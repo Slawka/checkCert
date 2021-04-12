@@ -392,7 +392,18 @@ public class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jButtonCreateCSRActionPerformed
 
     private void jButtonSaveCSRActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSaveCSRActionPerformed
-
+        int[] selectedRow = jTable1.getSelectedRows();
+        if (fileChooser == null) {
+            fileChooser = new JFileChooser();
+        }
+        fileChooser.setDialogTitle("Choosing a directory to save");
+        // Определение режима - только каталог
+        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        int result = fileChooser.showOpenDialog(MainFrame.this);
+        // Если директория выбрана, покажем ее в сообщении
+        if (result == JFileChooser.APPROVE_OPTION) {
+            cert.saveCert((Integer) jTable1.getValueAt(selectedRow[0], 0), "CSR", fileChooser.getSelectedFile());
+        }
     }//GEN-LAST:event_jButtonSaveCSRActionPerformed
 
     private void jButtonDownloadActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonDownloadActionPerformed
@@ -406,8 +417,8 @@ public class MainFrame extends javax.swing.JFrame {
         int result = fileChooser.showOpenDialog(MainFrame.this);
         // Если директория выбрана, покажем ее в сообщении
         if (result == JFileChooser.APPROVE_OPTION) {
-            cert.saveCert((Integer) jTable1.getValueAt(selectedRow[0], 0), "cert", fileChooser.getSelectedFile());
-            cert.saveCert((Integer) jTable1.getValueAt(selectedRow[0], 0), "key", fileChooser.getSelectedFile());
+            cert.saveCert((Integer) jTable1.getValueAt(selectedRow[0], 0), "CERT", fileChooser.getSelectedFile());
+            cert.saveCert((Integer) jTable1.getValueAt(selectedRow[0], 0), "KEY", fileChooser.getSelectedFile());
         }
     }// GEN-LAST:event_jButtonDownloadActionPerformed
 
