@@ -5,6 +5,7 @@
  */
 package ru.ybar.checkcert;
 
+import java.awt.Component;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.util.logging.Level;
@@ -85,8 +86,13 @@ public class MainFrame extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Manager Cert");
+        setMinimumSize(new java.awt.Dimension(660, 470));
+        setPreferredSize(new java.awt.Dimension(660, 470));
+
+        jPanel1.setEnabled(false);
 
         jButtonUpload.setText("Upload Cert");
+        jButtonUpload.setEnabled(false);
         jButtonUpload.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonUploadActionPerformed(evt);
@@ -94,6 +100,7 @@ public class MainFrame extends javax.swing.JFrame {
         });
 
         jButtonDownload.setText("Download Cert");
+        jButtonDownload.setEnabled(false);
         jButtonDownload.setMaximumSize(new java.awt.Dimension(88, 23));
         jButtonDownload.setMinimumSize(new java.awt.Dimension(88, 23));
         jButtonDownload.setPreferredSize(new java.awt.Dimension(88, 23));
@@ -103,21 +110,29 @@ public class MainFrame extends javax.swing.JFrame {
             }
         });
 
+        jScrollPane1.setEnabled(false);
+
         jTable1.setAutoCreateRowSorter(true);
-        jTable1.setModel(cert.listCertTable());
+        jTable1.setEnabled(false);
         jTable1.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         jTable1.setShowGrid(true);
         jTable1.changeSelection(0, 0, false, false);
         jScrollPane1.setViewportView(jTable1);
 
         jTextFieldCertName.setToolTipText("Краткое описание сертификата");
+        jTextFieldCertName.setEnabled(false);
 
         jLabel1.setText("Short description");
+        jLabel1.setEnabled(false);
+
+        jTextFieldDelId.setEnabled(false);
 
         jLabelDelId.setText("Del ID");
         jLabelDelId.setToolTipText("");
+        jLabelDelId.setEnabled(false);
 
         jButtonDel.setText("Delete ID");
+        jButtonDel.setEnabled(false);
         jButtonDel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonDelActionPerformed(evt);
@@ -125,6 +140,7 @@ public class MainFrame extends javax.swing.JFrame {
         });
 
         jButtonUploadKey.setText("Upload Key");
+        jButtonUploadKey.setEnabled(false);
         jButtonUploadKey.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonUploadKeyActionPerformed(evt);
@@ -132,6 +148,7 @@ public class MainFrame extends javax.swing.JFrame {
         });
 
         jButtonSaveCSR.setText("Save CSR");
+        jButtonSaveCSR.setEnabled(false);
         jButtonSaveCSR.setMaximumSize(new java.awt.Dimension(88, 23));
         jButtonSaveCSR.setMinimumSize(new java.awt.Dimension(88, 23));
         jButtonSaveCSR.setPreferredSize(new java.awt.Dimension(88, 23));
@@ -154,7 +171,7 @@ public class MainFrame extends javax.swing.JFrame {
                         .addComponent(jTextFieldDelId, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jButtonDel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 569, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 638, Short.MAX_VALUE)
                     .addComponent(jButtonUpload, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                         .addComponent(jButtonDownload, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -182,7 +199,7 @@ public class MainFrame extends javax.swing.JFrame {
                     .addComponent(jButtonDownload, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jButtonUploadKey))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 261, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 320, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jButtonDel, javax.swing.GroupLayout.Alignment.TRAILING)
@@ -196,29 +213,38 @@ public class MainFrame extends javax.swing.JFrame {
                     .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(jTextFieldCertName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addComponent(jLabel1))
-                    .addContainerGap(339, Short.MAX_VALUE)))
+                    .addContainerGap(389, Short.MAX_VALUE)))
         );
 
         jTabbedPane1.addTab("DB Cet", jPanel1);
 
         jLabel2.setText("CN = ");
+        jLabel2.setEnabled(false);
 
         jTextFieldCN.setText("CN-Test");
+        jTextFieldCN.setEnabled(false);
 
         jLabel3.setText("OU = ");
         jLabel3.setToolTipText("");
+        jLabel3.setEnabled(false);
 
         jTextFieldOU.setText("OU-Test");
+        jTextFieldOU.setEnabled(false);
 
         jLabel4.setText("O = ");
+        jLabel4.setEnabled(false);
 
         jTextFieldO.setText("O-Test");
+        jTextFieldO.setEnabled(false);
 
         jLabel5.setText("C = ");
+        jLabel5.setEnabled(false);
 
         jTextFieldC.setText("C-Test");
+        jTextFieldC.setEnabled(false);
 
         jButtonCreateCSR.setText("Create CSR");
+        jButtonCreateCSR.setEnabled(false);
         jButtonCreateCSR.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonCreateCSRActionPerformed(evt);
@@ -228,20 +254,27 @@ public class MainFrame extends javax.swing.JFrame {
         buttonGroupTypeCert.add(jRadioButtonServerCert);
         jRadioButtonServerCert.setText("WWW server authentication");
         jRadioButtonServerCert.setActionCommand("server");
+        jRadioButtonServerCert.setEnabled(false);
 
         buttonGroupTypeCert.add(jRadioButtonServerClient);
         jRadioButtonServerClient.setSelected(true);
         jRadioButtonServerClient.setText("WWW client authentication");
         jRadioButtonServerClient.setActionCommand("client");
+        jRadioButtonServerClient.setEnabled(false);
 
         buttonGroupTypeCert.add(jRadioButtonServerAll);
         jRadioButtonServerAll.setText("WWW server and client authentication");
         jRadioButtonServerAll.setActionCommand("clientserver");
+        jRadioButtonServerAll.setEnabled(false);
+
+        jScrollPane3.setEnabled(false);
 
         jTextAreaIP.setColumns(20);
         jTextAreaIP.setRows(5);
         jTextAreaIP.setText("1.2.3.4\n4.3.2.1\n10.20.30.1");
         jScrollPane3.setViewportView(jTextAreaIP);
+
+        jScrollPane4.setEnabled(false);
 
         jTextAreaDNS.setColumns(20);
         jTextAreaDNS.setRows(5);
@@ -249,8 +282,10 @@ public class MainFrame extends javax.swing.JFrame {
         jScrollPane4.setViewportView(jTextAreaDNS);
 
         jLabel6.setText("IP one in line");
+        jLabel6.setEnabled(false);
 
         jLabel7.setText("DNS one in line");
+        jLabel7.setEnabled(false);
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -326,7 +361,7 @@ public class MainFrame extends javax.swing.JFrame {
                     .addComponent(jLabel7))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 162, Short.MAX_VALUE)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 205, Short.MAX_VALUE)
                     .addComponent(jScrollPane4))
                 .addGap(18, 18, 18)
                 .addComponent(jButtonCreateCSR)
@@ -343,7 +378,7 @@ public class MainFrame extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jTabbedPane1)
+            .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 450, Short.MAX_VALUE)
         );
 
         pack();
@@ -495,7 +530,8 @@ public class MainFrame extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new MainFrame().setVisible(true);
+                new JFrameLogin().setVisible(true);
+//                new MainFrame().setVisible(true);
 
             }
         });
