@@ -44,11 +44,12 @@ public class CertificateAuthorityClientTest {
 
     private static Logger logger = Logger.getLogger(CheckCert.class.getName());
     
-    private KeyPairGenerator KEY_PAIR_GENERATOR;
-    private int RSA_KEY_SIZE = 2048;
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-    private String TEST_IP_ADDR = "127.0.0.1";
-
+    public KeyPairGenerator KEY_PAIR_GENERATOR;
+    public int RSA_KEY_SIZE = 2048;
+    //@SuppressWarnings("PMD.AvoidUsingHardCodedIP")
+    public String TEST_IP_ADDR = "127.0.0.1";
+    
+    
     public byte[] createCSR() throws IOException, OperatorCreationException {
 
         try {
@@ -60,7 +61,10 @@ public class CertificateAuthorityClientTest {
         KeyPair keyPair = KEY_PAIR_GENERATOR.generateKeyPair();
 
         X500Name name = new X500NameBuilder()
-                .addRDN(BCStyle.CN, "issuer")
+                .addRDN(BCStyle.CN, "issuerCN")
+                .addRDN(BCStyle.OU, "00OU")
+                .addRDN(BCStyle.O, "Company")
+                .addRDN(BCStyle.C, "RU")
                 .build();
 
         ExtensionsGenerator extensionsGenerator = new ExtensionsGenerator();
@@ -106,7 +110,7 @@ public class CertificateAuthorityClientTest {
         try ( Connection conn = new CheckCert().connect();  PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
 
             // set parameters
-            pstmt.setBytes(1, csr.getEncoded());
+            pstmt.setBytes(1, strCsr.toString().getBytes("UTF-8"));
             pstmt.setString(2, csr.getSubject().toString());
             numRowsInserted = pstmt.executeUpdate();
             logger.log(Level.INFO, "Stored the file in the BLOB column = {0}", numRowsInserted);

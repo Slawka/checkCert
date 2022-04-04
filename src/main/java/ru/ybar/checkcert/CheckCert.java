@@ -41,7 +41,17 @@ public class CheckCert {
 
     private static Logger logger = Logger.getLogger(CheckCert.class.getName());
 
+    private String dbLogin, dbPass;
+
     private static String dateFormat = "dd-MM-yyyy HH:mm:ss";
+
+    public void setDbLogin(String dbLogin) {
+        this.dbLogin = dbLogin;
+    }
+
+    public void setDbPass(String dbPass) {
+        this.dbPass = dbPass;
+    }
     private String endOfDay = "";
 
     private void setEndOfDay(String endOfDay) {
@@ -56,7 +66,7 @@ public class CheckCert {
     }
 
     public CheckCert() {
-        createTable();
+//        createTable();
     }
 
     /**
@@ -89,16 +99,17 @@ public class CheckCert {
      * @return the Connection object
      */
     public Connection connect() {
-        // SQLite connection string
-        String url = "jdbc:h2:./cert;CIPHER=AES";
-        String user = "sa";
-        String pwds = "test" + " userpwd";
+        // H2 connection string
+        String user = this.dbLogin;
+        String pwds = this.dbPass;
+        String url = "jdbc:h2:./" + user + ";CIPHER=AES";
+
         try {
             Class.forName("org.h2.Driver");
             return DriverManager.getConnection(url, user, pwds);
         } catch (SQLException | ClassNotFoundException e) {
             logger.log(Level.SEVERE, "Connect: {0}", e.getMessage());
-            System.exit(1);
+//            System.exit(1);
             return null;
         }
     }
@@ -248,7 +259,7 @@ public class CheckCert {
                 System.out.println("NAME" + type);
                 rs.next();
                 System.out.println(rs.getString("NAME" + type));
-                File file = new File(path, rs.getString("NAME" + type).replaceAll("[, ]","_"));
+                File file = new File(path, rs.getString("NAME" + type).replaceAll("[, ]", "_"));
                 try ( FileOutputStream fos = new FileOutputStream(file);) {
                     logger.log(Level.INFO, "Read BLOB to file {0}", file.getAbsolutePath());
 
@@ -375,7 +386,7 @@ public class CheckCert {
                         ));
         };
 
-        if (!IP.isEmpty() || !DNS.isEmpty()) {
+        if ((!IP.isEmpty() || !DNS.isEmpty()) && !type.equals("client")) {
 
             List<GeneralName> namesList = new ArrayList<>();
 
@@ -407,14 +418,27 @@ public class CheckCert {
         strCsr.close();
         //System.out.println(strCsr);
 
+        pemObject = new PemObject("PRIVATE KEY", keyPair.getPrivate().getEncoded());
+        StringWriter strKey = new StringWriter();
+        pemWriter = new PEMWriter(strKey);
+        pemWriter.writeObject(pemObject);
+        pemWriter.close();
+        strKey.close();
+
         int numRowsInserted = 0;
-        String insertSQL = "INSERT INTO PUBLIC.CERT " + "(\"CSR\",\"NAMECSR\") values" + "(?,?)";
+        String insertSQL = "INSERT INTO PUBLIC.CERT " + "(\"CSR\",\"NAMECSR\",\"KEY\",\"NAMEKEY\") values" + "(?,?,?,?)";
 
         try ( Connection conn = new CheckCert().connect();  PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
 
             // set parameters
+            String csrName = csr.getSubject().toString().replaceAll("CN=([^,]+).*", "$1");
+            System.out.println(csr.getSubject().toString());
+            System.out.println(csrName);
             pstmt.setBytes(1, strCsr.toString().getBytes("UTF-8"));
-            pstmt.setString(2, csr.getSubject().toString());
+            pstmt.setString(2, csrName);
+            pstmt.setBytes(3, strKey.toString().getBytes("UTF-8"));
+            pstmt.setString(4, csrName);
+
             numRowsInserted = pstmt.executeUpdate();
             logger.log(Level.INFO, "Stored the file in the BLOB column = {0}", numRowsInserted);
 
@@ -424,13 +448,13 @@ public class CheckCert {
             logger.log(Level.SEVERE, "End upload");
         }
 
-        pemObject = new PemObject("PRIVATE KEY", keyPair.getPrivate().getEncoded());
-        StringWriter str = new StringWriter();
-        pemWriter = new PEMWriter(str);
-        pemWriter.writeObject(pemObject);
-        pemWriter.close();
-        str.close();
-        System.out.println(str);
+//        pemObject = new PemObject("PRIVATE KEY", keyPair.getPrivate().getEncoded());
+//        StringWriter str = new StringWriter();
+//        pemWriter = new PEMWriter(str);
+//        pemWriter.writeObject(pemObject);
+//        pemWriter.close();
+//        str.close();
+        System.out.println(strKey);
 
         return new byte[0];
     }
